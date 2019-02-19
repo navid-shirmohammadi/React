@@ -10,6 +10,6 @@
   * improve data recording format
   * provide videos
   * find equation domaining system
-  *tune parameters
+  * tune parameters
   
   write report
