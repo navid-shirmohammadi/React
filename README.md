@@ -1,7 +1,7 @@
 # React
 
 ## target:
-  controlling a fish robot using magnetic fiels
+  controlling a fish robot using magnetic fields
   
 ## issues:
   * detect fish
