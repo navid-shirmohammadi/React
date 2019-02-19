@@ -11,5 +11,4 @@
   * provide videos
   * find equation domaining system
   * tune parameters
-  
-  write report
+  * write report
