@@ -1,0 +1,6 @@
+21-02-2019:
+  some problems detected in flag detection
+  fish seems to be smaller than expected to be which will lead to problebs using tags
+  need some filtering over image based on size of contour
+  connection to arduino implemented using pyserial and echo.c
+  
