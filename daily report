@@ -3,4 +3,19 @@
   fish seems to be smaller than expected to be which will lead to problebs using tags
   need some filtering over image based on size of contour
   connection to arduino implemented using pyserial and echo.ino
+
+26-02-2019:
+  changed color space to LAB/YUV/YCrCb but not acceptable 
+  search for better methods
   
+03-03-2019:
+  aruco tags seems to work better 
+  ar-markers works well but no coordinates provided by programmer
+  cv2-contrib downloaded and coorinates provided this time but not working good 
+  
+06-03-2019:
+  aruco lags solved by changing camera foucal length
+  replacing aruco tags for better result
+  rewite arduino code
+  completed python code control function/ camera function/ serial function
+  removed extra codes
