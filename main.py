@@ -7,7 +7,6 @@ import scipy
 from timeit import default_timer as timer
 from datetime import datetime
 
-
 import serial
 
 '''
@@ -33,10 +32,11 @@ aruco_dict = aruco.Dictionary_get(aruco.DICT_6X6_250)
 parameters = aruco.DetectorParameters_create()
 
 # I used this vars for control function
-amplitude = 2
+amplitude = 0.05
 direction = 95
 bias_angle = 20
-freq = 2 * 2 * pi
+freq = 0.5
+frame = None
 
 # path user selected for robot in editor
 path = []
@@ -90,32 +90,32 @@ def report():
 			file.write(str(item) + '\n')
 		file.close()
 
+
 angle_backup = 0
 
+
 def control(fish_corners, target_):
-	global ser, amplitude, direction, freq, bias_angle, angle_backup
+	global ser, amplitude, direction, freq, bias_angle, angle_backup, frame
 
 	t = timer() - start
 
 	angle = angle_backup
-
+	pt = None
 	if fish_corners:
 		fish_corners = fish_corners[0][0]
 
-		pt0 = [(fish_corners[0][0]+fish_corners[2][0])/2,
-			   (fish_corners[0][1]+fish_corners[2][1])/2]
+		pt0 = [(fish_corners[0][0] + fish_corners[2][0]) / 2,
+			   (fish_corners[0][1] + fish_corners[2][1]) / 2]
+		pt = pt0
 		pt1 = target_
+		
+		direction = (scipy.angle((pt0[0] - pt1[0]) + (pt0[1] - pt1[1]) * 1j, True) - 90) % 360
 
-		# print(pt0)
-
-		direction = (scipy.angle((pt0[0]-pt1[0])+(pt0[1]-pt1[1])*1j, True) - 90) % 360
-
-		angle = (direction + bias_angle * sin(freq * t))
+		angle = (direction + bias_angle * sin(freq * 2 * pi * t))
 		angle_backup = angle
-		print(direction)
 
-	x = amplitude * cos(int(angle) * 3.1415 / 180)
-	y = amplitude * sin(int(angle) * 3.1415 / 180)
+	x = amplitude * cos(angle * pi / 180)
+	y = amplitude * sin(angle * pi / 180)
 
 	poly_x = 114.8 * abs(x) ** 0.5157
 	poly_y = 114.8 * abs(y) ** 0.5157
@@ -124,6 +124,10 @@ def control(fish_corners, target_):
 		poly_x = -poly_x
 	if y < 0:
 		poly_y = -poly_y
+	
+	scale = 1
+	if pt:
+		cv2.line(frame, (int(pt[0]), int(pt[1])), (int(pt[0]+scale*poly_x), int(pt[1]+scale*poly_y)), (0, 200, 100), 2)
 
 	COMMAND = str(int(poly_x)) + '^' + str(int(poly_y)) + '!'
 
@@ -143,7 +147,7 @@ if __name__ == '__main__':
 
 	target = 0  # index of target robot has to reach
 
-	# FPS = []  # use this list to calculate frame per second of camera
+	FPS = []  # use this list to calculate frame per second of camera
 
 	while True:
 		frame, time, corners = camera()
@@ -152,12 +156,12 @@ if __name__ == '__main__':
 			data['position'].append([time, path[target], corners, (amplitude, direction)])
 
 		# calculate FPS
-		"""
+		
 		FPS.append(time)
 		if len(FPS) > 10:
 			FPS = FPS[-10:]
 			print(10 / (FPS[-1] - FPS[-10]))
-		"""
+		
 		# high light target
 		target_size = 10
 		target_color = (40, 20, 220)
@@ -188,8 +192,6 @@ if __name__ == '__main__':
 				if target == len(path):
 					break
 
-		# show frame
-		cv2.imshow('experiment', frame)
 
 		key = cv2.waitKey(10) & 0xff
 
@@ -197,7 +199,10 @@ if __name__ == '__main__':
 			break
 		else:
 			control(corners, path[target])
-
+			
+		# show frame
+		cv2.imshow('experiment', frame)
+	
 	report()
 	cap.release()
 	cv2.destroyAllWindows()
