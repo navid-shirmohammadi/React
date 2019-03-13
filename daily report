@@ -19,3 +19,8 @@
   rewite arduino code
   completed python code control function/ camera function/ serial function
   removed extra codes
+
+13-03-2019:
+  object position detection don`t work well when fource exerted
+  testing codes on https://www.learnopencv.com/object-tracking-using-opencv-cpp-python/ to improve performance
+  CSRT seems to have best performance
