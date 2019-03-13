@@ -15,7 +15,7 @@ import serial
 --------------------------------
 '''
 # the minimum distance of fish from target
-reach_target_distance = 10
+reach_target_distance = 20
 
 # select camera
 cap = cv2.VideoCapture(0)
@@ -32,12 +32,17 @@ aruco_dict = aruco.Dictionary_get(aruco.DICT_6X6_250)
 parameters = aruco.DetectorParameters_create()
 
 # I used this vars for control function
-amplitude = 0.05
+amplitude = 4
 direction = 95
-bias_angle = 20
-freq = 0.5
+bias_angle = 15
+freq = 5
 frame = None
 
+# tracker
+tracker_type = 'KCF'
+tracker = cv2.TrackerCSRT_create()
+
+ROI_coord = None
 # path user selected for robot in editor
 path = []
 
@@ -95,24 +100,30 @@ angle_backup = 0
 
 
 def control(fish_corners, target_):
-	global ser, amplitude, direction, freq, bias_angle, angle_backup, frame
-
+	global ser, amplitude, direction, freq, bias_angle, angle_backup, frame, ROI_coord
+	
 	t = timer() - start
 
 	angle = angle_backup
-	pt = None
-	if fish_corners:
-		fish_corners = fish_corners[0][0]
+	pt0 = None
+	pt1 = None
+	
+	if len(fish_corners):
+		fish_corners = fish_corners
+		print(fish_corners)
 
 		pt0 = [(fish_corners[0][0] + fish_corners[2][0]) / 2,
 			   (fish_corners[0][1] + fish_corners[2][1]) / 2]
-		pt = pt0
-		pt1 = target_
-		
-		direction = (scipy.angle((pt0[0] - pt1[0]) + (pt0[1] - pt1[1]) * 1j, True) - 90) % 360
+	
+	else:
+		pt0 = ROI_coord
+	
+	pt1 = target_
+	direction = (scipy.angle((pt0[0] - pt1[0]) + (pt0[1] - pt1[1]) * 1j, True) - 90) % 360
 
-		angle = (direction + bias_angle * sin(freq * 2 * pi * t))
-		angle_backup = angle
+	angle = (direction + bias_angle * sin(freq * 2 * pi * t))
+	angle_backup = angle
+	
 
 	x = amplitude * cos(angle * pi / 180)
 	y = amplitude * sin(angle * pi / 180)
@@ -126,8 +137,8 @@ def control(fish_corners, target_):
 		poly_y = -poly_y
 	
 	scale = 1
-	if pt:
-		cv2.line(frame, (int(pt[0]), int(pt[1])), (int(pt[0]+scale*poly_x), int(pt[1]+scale*poly_y)), (0, 200, 100), 2)
+	
+	cv2.line(frame, (int(pt0[0]), int(pt0[1])), (int(pt0[0]+scale*poly_x), int(pt0[1]+scale*poly_y)), (0, 200, 100), 2)
 
 	COMMAND = str(int(poly_x)) + '^' + str(int(poly_y)) + '!'
 
@@ -143,6 +154,11 @@ def control(fish_corners, target_):
 if __name__ == '__main__':
 	# enter editor
 	frame, _, _ = camera()  # just get a frame for editor
+	
+	# ROI
+	bbox = cv2.selectROI(frame, False)
+	ok = tracker.init(frame, bbox)
+	
 	editor(frame)
 
 	target = 0  # index of target robot has to reach
@@ -153,15 +169,21 @@ if __name__ == '__main__':
 		frame, time, corners = camera()
 
 		if len(corners):
-			data['position'].append([time, path[target], corners, (amplitude, direction)])
-
-		# calculate FPS
+			corners = corners[0][0]
+			print(corners)
+			c = [int(corners[0][0]+corners[1][0]+corners[2][0]+corners[3][0]),
+				 int(corners[0][1] + corners[1][1] + corners[2][1] + corners[3][1])]
+			data['position'].append(['ARC', time, path[target], (int(c[0]/4), int(c[1]/4)), (amplitude, direction)])
 		
+		ok, bbox = tracker.update(frame)
+		
+		# calculate FPS
+		"""
 		FPS.append(time)
 		if len(FPS) > 10:
 			FPS = FPS[-10:]
 			print(10 / (FPS[-1] - FPS[-10]))
-		
+		"""
 		# high light target
 		target_size = 10
 		target_color = (40, 20, 220)
@@ -174,10 +196,9 @@ if __name__ == '__main__':
 				 target_color, 2)
 
 		# draw a line from current position to target
-		if corners:
-			corner = corners[0]
-			current_position = (int((corner[0, 0, 0] + corner[0, 1, 0] + corner[0, 2, 0] + corner[0, 3, 0]) / 4),
-								int((corner[0, 0, 1] + corner[0, 1, 1] + corner[0, 2, 1] + corner[0, 3, 1]) / 4))
+		if len(corners):
+			current_position = (int((corners[0, 0] + corners[1, 0] + corners[2, 0] + corners[3, 0]) / 4),
+								int((corners[0, 1] + corners[1, 1] + corners[2, 1] + corners[3, 1]) / 4))
 
 			cv2.line(frame, (path[target][0], path[target][1]),
 					 (int(current_position[0]), int(current_position[1])), (255, 255, 255), 2)
@@ -191,8 +212,38 @@ if __name__ == '__main__':
 				# reached the last target
 				if target == len(path):
 					break
+			
+			
+			
+			
+		
+		if ok:
+			p1 = (int(bbox[0]), int(bbox[1]))
+			p2 = (int(bbox[0] + bbox[2]), int(bbox[1] + bbox[3]))
+			
+			
+			ROI_coord = (int((p1[0]+p2[0])/2), int((p1[1]+p2[1])/2))
+			
+			if not len(corners):
+				data['position'].append(['ROI', time, path[target], (int(ROI_coord[0]), int(ROI_coord[1])), (amplitude, direction)])
+			
+			cv2.rectangle(frame, p1, p2, (255, 0, 0), 2, 1)
+			
+			if (ROI_coord[0] - path[target][0]) ** 2 + \
+				(ROI_coord[1] - path[target][1]) ** 2 < reach_target_distance ** 2:
+				target += 1
 
-
+				# reached the last target
+				if target == len(path):
+					break
+		else:
+			cv2.putText(frame, "Tracking failure detected", (100, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0, 0, 255), 2)
+		cv2.putText(frame, tracker_type + " Tracker", (100, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (50, 170, 50), 2)
+		
+		
+		
+		
+		
 		key = cv2.waitKey(10) & 0xff
 
 		if key == 27:
