@@ -1,7 +1,7 @@
 # React
 
 ## Description:
-  controlling a fish robot using magnetic fields
+  controlling a fish model using magnetic fields
   
 ## Works Done:
   - arduino code for controlling magnetic fields
