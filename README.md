@@ -9,11 +9,12 @@
   - serial connection to arduino
   - mathematical operations for fields and position
   - removed extra codes
-  
-## TODO:
-  - test fish in fluid
-  - control max input value of fields magnitude and show proper warning
+  - test fish in fluid  
   - move code to raspberry pi
   - take some data
+
+## TODO:
+  - check extra signals
+  - update controller
   - test other three fishes
   - write report
