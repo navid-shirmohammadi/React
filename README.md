@@ -1,20 +1,15 @@
-# React
+# React پروژه
 
-## Description:
-  controlling a fish model using magnetic fields
+## توضیحات:
+هدف پروژه، کنترل مدار بسته چند نمونه از ربات های ماهی شکل با استفاده از سیم پیچ هلمهولتز با رزبری پای و پردازش تصویر
   
-## Works Done:
-  - arduino code for controlling magnetic fields
-  - opencv code to detect fish position using aruco tags
-  - serial connection to arduino
-  - mathematical operations for fields and position
-  - removed extra codes
-  - test fish in fluid  
-  - move code to raspberry pi
-  - take some data
-
-## TODO:
-  - check extra signals
-  - update controller
-  - test other three fishes
-  - write report
+  
+## کار های انجام شده:
+  - کد آردوینو برای ارتباط سریال با رزبری پای
+  - کد موازی سازی شده و معمولی برای رزبری پای
+  - کد تشخیص موقعیت ربات با الگوریتم KFC
+  - کد تشخیص موقعیت ربات با برچسب ArUco
+  - نمونه داده های ثبت شده در آزمایش
+  - کد های کاربردی برای نمایش و تحلیل داده ها
+## لغات کلیدی
+کنترل، ربات ماهی، رزربری پای، پردازش تصویر
